@@ -146,8 +146,19 @@ constexpr const u64 SHA256_HASH_BYTES = 32;
 
 struct Sha256Hash
 {
-	char value[ SHA256_HASH_BYTES + 1 ];
+	char value[ SHA256_HASH_BYTES ];
 };
+
+std::ostream & operator << ( std::ostream &out, const Sha256Hash &hash )
+{
+	constexpr char hex[] = "0123456789abcdef";
+	for ( i32 i = 0; i < SHA256_HASH_BYTES; ++i )
+	{
+		u8 v = hash.value[ i ];
+		std::cout << hex[ ( v >> 4 ) & 15 ] << hex[ v & 15 ];
+	}
+	return out;
+}
 
 Sha256Hash sha256( const char *dataIn, u64 size )
 {
@@ -277,7 +288,7 @@ Sha256Hash sha256( const char *dataIn, u64 size )
 	hash.value[ 29 ] = ( h >> 16 ) & 0xFF;
 	hash.value[ 30 ] = ( h >>  8 ) & 0xFF;
 	hash.value[ 31 ] = ( h >>  0 ) & 0xFF;
-	hash.value[ SHA256_HASH_BYTES ] = 0;
+
 	return hash;
 }
 
@@ -301,13 +312,7 @@ int main( int argc, char *argv[] )
 
 	Sha256Hash sha256Result = sha256( fileData.data(), fileData.size() );
 
-	constexpr char hex[] = "0123456789abcdef";
-
-	for ( i32 i = 0; i < SHA256_HASH_BYTES; ++i )
-	{
-		u8 v = sha256Result.value[ i ];
-		std::cout << hex[ ( v >> 4 ) & 15 ] << hex[ v & 15 ];
-	}
+	std::cout << sha256Result;
 
 	return RESULT_CODE_SUCCESS;
 }
