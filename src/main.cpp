@@ -155,70 +155,128 @@ Sha256Hash sha256( const char *dataIn, u64 size )
 	u64 padding = 64 - ( ( size + 1 + 8 ) & 63 );
 
 	std::vector<u8> data;
-	data.reserve( size + padding );
+	data.reserve( size + 1 + 8 + padding );
 	data.assign( dataIn, dataIn + size );
 
 	// -- padding --
 	data.push_back( 0b10000000 );
-	for ( i32 i = 0; i < padding; ++i )
-		data.push_back( 0 );
+	data.resize( data.size() + padding );
 
-	// -- length of message --
-	data.push_back( ( size >> 54 ) & 0xFF );
-	data.push_back( ( size >> 48 ) & 0xFF );
-	data.push_back( ( size >> 40 ) & 0xFF );
-	data.push_back( ( size >> 32 ) & 0xFF );
-	data.push_back( ( size >> 24 ) & 0xFF );
-	data.push_back( ( size >> 16 ) & 0xFF );
-	data.push_back( ( size >>  8 ) & 0xFF );
-	data.push_back( ( size >>  0 ) & 0xFF );
+	// -- length of message (big endian) --
+	u64 bits = size * 8;
+	data.push_back( ( bits >> 54 ) & 0xFF );
+	data.push_back( ( bits >> 48 ) & 0xFF );
+	data.push_back( ( bits >> 40 ) & 0xFF );
+	data.push_back( ( bits >> 32 ) & 0xFF );
+	data.push_back( ( bits >> 24 ) & 0xFF );
+	data.push_back( ( bits >> 16 ) & 0xFF );
+	data.push_back( ( bits >>  8 ) & 0xFF );
+	data.push_back( ( bits >>  0 ) & 0xFF );
 
-	u32 h0 = 0x6a09e667;
-	u32 h1 = 0xbb67ae85;
-	u32 h2 = 0x3c6ef372;
-	u32 h3 = 0xa54ff53a;
-	u32 h4 = 0x510e527f;
-	u32 h5 = 0x9b05688c;
-	u32 h6 = 0x1f83d9ab;
-	u32 h7 = 0x5be0cd19;
+	u32 a = 0x6a09e667;
+	u32 b = 0xbb67ae85;
+	u32 c = 0x3c6ef372;
+	u32 d = 0xa54ff53a;
+	u32 e = 0x510e527f;
+	u32 f = 0x9b05688c;
+	u32 g = 0x1f83d9ab;
+	u32 h = 0x5be0cd19;
 
-	// TODO ...
-	// ...
+	u8 *dataByte = data.data();
+	u32 words[ 64 ];
+
+	for ( u64 blockIdx = 0, blockCount = ( data.size() / 64 ); blockIdx < blockCount; ++blockIdx )
+	{
+		// -- message schedule ---
+		u32 *word = words;
+
+		for ( i32 w = 0; w < 16; ++w )
+		{
+			u32 d0 = *dataByte++;
+			u32 d1 = *dataByte++;
+			u32 d2 = *dataByte++;
+			u32 d3 = *dataByte++;
+
+			*word++ = ( d0 << 24 ) | ( d1 << 16 ) | ( d2 << 8 ) | d3;
+		}
+
+		for ( i32 w = 16; w < 64; ++w )
+		{
+			*word++ = sigma1( word[ -2 ] ) + word[ -7 ] + sigma0( word[ -15 ] ) + word[ -16 ];
+		}
+
+		// -- compression --
+		u32 h0 = a;
+		u32 h1 = b;
+		u32 h2 = c;
+		u32 h3 = d;
+		u32 h4 = e;
+		u32 h5 = f;
+		u32 h6 = g;
+		u32 h7 = h;
+
+		word = words;
+		const u32 *k = constants;
+
+		for ( i32 w = 0; w < 64; ++w )
+		{
+			u32 t0 = *word++ + *k++ + usigma1( e ) + choice( e, f, g ) + h;
+			u32 t1 = usigma0( a ) + majority( a, b, c );
+
+			h = g;
+			g = f;
+			f = e;
+			e = d + t0;
+			d = c;
+			c = b;
+			b = a;
+			a = t0 + t1;
+		}
+
+		a += h0;
+		b += h1;
+		c += h2;
+		d += h3;
+		e += h4;
+		f += h5;
+		g += h6;
+		h += h7;
+	}
 
 	// -- output --
 	Sha256Hash hash;
-	hash.value[  0 ] = ( h0 >>  0 ) & 0xFF;
-	hash.value[  1 ] = ( h0 >>  8 ) & 0xFF;
-	hash.value[  2 ] = ( h0 >> 16 ) & 0xFF;
-	hash.value[  3 ] = ( h0 >> 24 ) & 0xFF;
-	hash.value[  4 ] = ( h1 >>  0 ) & 0xFF;
-	hash.value[  5 ] = ( h1 >>  8 ) & 0xFF;
-	hash.value[  6 ] = ( h1 >> 16 ) & 0xFF;
-	hash.value[  7 ] = ( h1 >> 24 ) & 0xFF;
-	hash.value[  8 ] = ( h2 >>  0 ) & 0xFF;
-	hash.value[  9 ] = ( h2 >>  8 ) & 0xFF;
-	hash.value[ 10 ] = ( h2 >> 16 ) & 0xFF;
-	hash.value[ 11 ] = ( h2 >> 24 ) & 0xFF;
-	hash.value[ 12 ] = ( h3 >>  0 ) & 0xFF;
-	hash.value[ 13 ] = ( h3 >>  8 ) & 0xFF;
-	hash.value[ 14 ] = ( h3 >> 16 ) & 0xFF;
-	hash.value[ 15 ] = ( h3 >> 24 ) & 0xFF;
-	hash.value[ 16 ] = ( h4 >>  0 ) & 0xFF;
-	hash.value[ 17 ] = ( h4 >>  8 ) & 0xFF;
-	hash.value[ 18 ] = ( h4 >> 16 ) & 0xFF;
-	hash.value[ 19 ] = ( h4 >> 24 ) & 0xFF;
-	hash.value[ 20 ] = ( h5 >>  0 ) & 0xFF;
-	hash.value[ 21 ] = ( h5 >>  8 ) & 0xFF;
-	hash.value[ 22 ] = ( h5 >> 16 ) & 0xFF;
-	hash.value[ 23 ] = ( h5 >> 24 ) & 0xFF;
-	hash.value[ 24 ] = ( h6 >>  0 ) & 0xFF;
-	hash.value[ 25 ] = ( h6 >>  8 ) & 0xFF;
-	hash.value[ 26 ] = ( h6 >> 16 ) & 0xFF;
-	hash.value[ 27 ] = ( h6 >> 24 ) & 0xFF;
-	hash.value[ 28 ] = ( h7 >>  0 ) & 0xFF;
-	hash.value[ 29 ] = ( h7 >>  8 ) & 0xFF;
-	hash.value[ 30 ] = ( h7 >> 16 ) & 0xFF;
-	hash.value[ 31 ] = ( h7 >> 24 ) & 0xFF;
+	hash.value[  0 ] = ( a >> 24 ) & 0xFF;
+	hash.value[  1 ] = ( a >> 16 ) & 0xFF;
+	hash.value[  2 ] = ( a >>  8 ) & 0xFF;
+	hash.value[  3 ] = ( a >>  0 ) & 0xFF;
+	hash.value[  4 ] = ( b >> 24 ) & 0xFF;
+	hash.value[  5 ] = ( b >> 16 ) & 0xFF;
+	hash.value[  6 ] = ( b >>  8 ) & 0xFF;
+	hash.value[  7 ] = ( b >>  0 ) & 0xFF;
+	hash.value[  8 ] = ( c >> 24 ) & 0xFF;
+	hash.value[  9 ] = ( c >> 16 ) & 0xFF;
+	hash.value[ 10 ] = ( c >>  8 ) & 0xFF;
+	hash.value[ 11 ] = ( c >>  0 ) & 0xFF;
+	hash.value[ 12 ] = ( d >> 24 ) & 0xFF;
+	hash.value[ 13 ] = ( d >> 16 ) & 0xFF;
+	hash.value[ 14 ] = ( d >>  8 ) & 0xFF;
+	hash.value[ 15 ] = ( d >>  0 ) & 0xFF;
+	hash.value[ 16 ] = ( e >> 24 ) & 0xFF;
+	hash.value[ 17 ] = ( e >> 16 ) & 0xFF;
+	hash.value[ 18 ] = ( e >>  8 ) & 0xFF;
+	hash.value[ 19 ] = ( e >>  0 ) & 0xFF;
+	hash.value[ 20 ] = ( f >> 24 ) & 0xFF;
+	hash.value[ 21 ] = ( f >> 16 ) & 0xFF;
+	hash.value[ 22 ] = ( f >>  8 ) & 0xFF;
+	hash.value[ 23 ] = ( f >>  0 ) & 0xFF;
+	hash.value[ 24 ] = ( g >> 24 ) & 0xFF;
+	hash.value[ 25 ] = ( g >> 16 ) & 0xFF;
+	hash.value[ 26 ] = ( g >>  8 ) & 0xFF;
+	hash.value[ 27 ] = ( g >>  0 ) & 0xFF;
+	hash.value[ 28 ] = ( h >> 24 ) & 0xFF;
+	hash.value[ 29 ] = ( h >> 16 ) & 0xFF;
+	hash.value[ 30 ] = ( h >>  8 ) & 0xFF;
+	hash.value[ 31 ] = ( h >>  0 ) & 0xFF;
 	hash.value[ SHA256_HASH_BYTES ] = 0;
 	return hash;
 }
@@ -243,7 +301,13 @@ int main( int argc, char *argv[] )
 
 	Sha256Hash sha256Result = sha256( fileData.data(), fileData.size() );
 
-	std::cout << std::string_view( sha256Result.value, SHA256_HASH_BYTES ) << std::endl;
+	constexpr char hex[] = "0123456789abcdef";
+
+	for ( i32 i = 0; i < SHA256_HASH_BYTES; ++i )
+	{
+		u8 v = sha256Result.value[ i ];
+		std::cout << hex[ ( v >> 4 ) & 15 ] << hex[ v & 15 ];
+	}
 
 	return RESULT_CODE_SUCCESS;
 }
