@@ -155,7 +155,7 @@ std::ostream & operator << ( std::ostream &out, const Sha256Hash &hash )
 	for ( i32 i = 0; i < SHA256_HASH_BYTES; ++i )
 	{
 		u8 v = hash.value[ i ];
-		std::cout << hex[ ( v >> 4 ) & 15 ] << hex[ v & 15 ];
+		out << hex[ ( v >> 4 ) & 15 ] << hex[ v & 15 ];
 	}
 	return out;
 }
