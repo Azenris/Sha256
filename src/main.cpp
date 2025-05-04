@@ -35,32 +35,32 @@ static inline u32 xor_3word( u32 data0, u32 data1, u32 data2 )
 	return ( data0 ^ data1 ) ^ data2;
 }
 
-static u32 sigma0( u32 data )
+static inline u32 sigma0( u32 data )
 {
 	return rr( data, 7 ) ^ rr( data, 18 ) ^ sr( data, 3 );
 };
 
-static u32 sigma1( u32 data )
+static inline u32 sigma1( u32 data )
 {
 	return rr( data, 17 ) ^ rr( data, 19 ) ^ sr( data, 10 );
 };
 
-static u32 usigma0( u32 data )
+static inline u32 usigma0( u32 data )
 {
 	return rr( data, 2 ) ^ rr( data, 13 ) ^ rr( data, 22 );
 };
 
-static u32 usigma1( u32 data )
+static inline u32 usigma1( u32 data )
 {
 	return rr( data, 6 ) ^ rr( data, 11 ) ^ rr( data, 25 );
 };
 
-static u32 choice( u32 data0, u32 data1, u32 data2 )
+static inline u32 choice( u32 data0, u32 data1, u32 data2 )
 {
 	return ( data0 & data1 ) ^ ( ~data0 & data2 );
 };
 
-static u32 majority( u32 data0, u32 data1, u32 data2 )
+static inline u32 majority( u32 data0, u32 data1, u32 data2 )
 {
 	return ( data0 & data1 ) ^ ( data0 & data2 ) ^ ( data1 & data2 );
 };
