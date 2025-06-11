@@ -162,7 +162,7 @@ std::ostream & operator << ( std::ostream &out, const Sha256Hash &hash )
 
 Sha256Hash sha256( const char *dataIn, u64 size )
 {
-	// 1 byte of 0b100000000 + 8 bytes of the length, &63 = %64, which is 512 bit blocks
+	// 1 byte of 0b10000000 + 8 bytes of the length, &63 = %64, which is 512 bit blocks
 	u64 padding = 64 - ( ( size + 1 + 8 ) & 63 );
 
 	std::vector<u8> data;

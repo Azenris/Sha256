@@ -2,9 +2,6 @@
 cls
 setlocal enableDelayedExpansion
 
-:: build\static-mt\builds\debug\sha256 test.txt > temp.txt
-:: set /p hash= < temp.txt
-
 for /f "delims=" %%i in ('build\static-mt\builds\debug\sha256 test.txt') do (
 	set hash=%%i
 )
