@@ -45,7 +45,6 @@ endif()
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Windows" )
 	set( platform "PLATFORM_WINDOWS" )
-	target_link_libraries( ${APP_NAME} PRIVATE ws2_32 )
 endif()
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
