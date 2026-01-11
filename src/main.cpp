@@ -175,7 +175,7 @@ Sha256Hash sha256( const char *dataIn, u64 size )
 
 	// -- length of message (big endian) --
 	u64 bits = size * 8;
-	data.push_back( ( bits >> 54 ) & 0xFF );
+	data.push_back( ( bits >> 56 ) & 0xFF );
 	data.push_back( ( bits >> 48 ) & 0xFF );
 	data.push_back( ( bits >> 40 ) & 0xFF );
 	data.push_back( ( bits >> 32 ) & 0xFF );
@@ -199,8 +199,6 @@ Sha256Hash sha256( const char *dataIn, u64 size )
 	for ( u64 blockIdx = 0, blockCount = ( data.size() / 64 ); blockIdx < blockCount; ++blockIdx )
 	{
 		// -- message schedule ---
-		u32 *word = words;
-
 		for ( i32 w = 0; w < 16; ++w )
 		{
 			u32 d0 = *dataByte++;
@@ -208,12 +206,12 @@ Sha256Hash sha256( const char *dataIn, u64 size )
 			u32 d2 = *dataByte++;
 			u32 d3 = *dataByte++;
 
-			*word++ = ( d0 << 24 ) | ( d1 << 16 ) | ( d2 << 8 ) | d3;
+			words[ w ] = ( d0 << 24 ) | ( d1 << 16 ) | ( d2 << 8 ) | d3;
 		}
 
 		for ( i32 w = 16; w < 64; ++w )
 		{
-			*word++ = sigma1( word[ -2 ] ) + word[ -7 ] + sigma0( word[ -15 ] ) + word[ -16 ];
+			words[ w ] = sigma1( words[ w - 2 ] ) + words[ w - 7 ] + sigma0( words[ w - 15 ] ) + words[ w - 16 ];
 		}
 
 		// -- compression --
@@ -226,12 +224,9 @@ Sha256Hash sha256( const char *dataIn, u64 size )
 		u32 h6 = g;
 		u32 h7 = h;
 
-		word = words;
-		const u32 *k = constants;
-
 		for ( i32 w = 0; w < 64; ++w )
 		{
-			u32 t0 = *word++ + *k++ + usigma1( e ) + choice( e, f, g ) + h;
+			u32 t0 = words[ w ] + constants[ w ] + usigma1( e ) + choice( e, f, g ) + h;
 			u32 t1 = usigma0( a ) + majority( a, b, c );
 
 			h = g;
